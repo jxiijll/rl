@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GLIDE | GPU Job Dispatching</title>
+    <meta
+      name="description"
+      content="GLIDE: GRU-based Lag-Informed Decision Engine for GPU Job Dispatching."
+    >
+    <link rel="stylesheet" href="./style.css">
+    <script src="./script.js" defer></script>
+  </head>
+  <body>
+    <header class="hero">
+      <nav class="top-nav container" aria-label="Primary navigation">
+        <a href="#abstract">Abstract</a>
+        <a href="#method">Method</a>
+        <a href="#results">Results</a>
+        <a href="#bibtex">BibTeX</a>
+      </nav>
+
+      <div class="container hero-inner reveal">
+        <p class="eyebrow">NYCU Reinforcement Learning Course Project</p>
+        <h1>GLIDE</h1>
+        <p class="subtitle">GRU-based Lag-Informed Decision Engine for GPU Job Dispatching</p>
+        <p class="pitch">
+          A service-lag-aware reinforcement learning scheduler that learns which feasible GPU job to
+          dispatch while keeping placement fixed. The core trick is to train on CFS-style service-lag
+          motion, not just average slowdown.
+        </p>
+        <p class="authors">
+          Haopei Teng, Juiyun Chang, Jinjia Zheng<br>
+          Department of Computer Science, National Yang Ming Chiao Tung University
+        </p>
+        <div class="button-row" aria-label="Project links">
+          <a class="button primary" href="./assets/proposal.pdf">Proposal PDF</a>
+          <a class="button" href="#">Code</a>
+          <a class="button" href="#bibtex">BibTeX</a>
+        </div>
+        <div class="hero-teaser" aria-label="GLIDE teaser findings">
+          <div>
+            <span>Primary finding</span>
+            <strong>13.742 CFS Lag AUC</strong>
+          </div>
+          <div>
+            <span>Behavior</span>
+            <strong>81.2% highest-risk feasible picks</strong>
+          </div>
+          <div>
+            <span>Guardrail</span>
+            <strong>0 pass actions, 0 unfinished jobs</strong>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="section" id="abstract">
+        <div class="container narrow reveal">
+          <p class="section-kicker">Abstract</p>
+          <h2>Service-Lag-Aware Dispatching Under Fixed Placement</h2>
+          <p>
+            Modern GPU clusters must balance latency, slowdown, fairness, and resource fragmentation.
+            Existing GPU cluster schedulers often rely on heuristic dispatching rules such as FIFO,
+            shortest-job-first, slowdown priority, and resource-aware scheduling. These rules are
+            strong and practical, but they cannot explicitly adapt their decisions to queue pressure,
+            resource availability, and accumulated service imbalance.
+          </p>
+          <p>
+            GLIDE studies whether reinforcement learning can improve GPU job dispatching under a
+            fixed placement backend. It uses a service-lag-aware GRU actor-critic scheduler trained
+            with PPO in a trace-driven GPU cluster simulator. The policy observes a bounded visible
+            queue window, filters infeasible jobs, and selects one feasible job to dispatch, while
+            First-Fit placement remains fixed.
+          </p>
+          <p>
+            This project does not claim state-of-the-art GPU scheduling performance. Instead, it
+            focuses on a controlled dispatching comparison: all evaluated methods share the same trace
+            split, node subset, placement backend, and evaluation metrics.
+          </p>
+        </div>
+      </section>
+
+      <section class="section muted">
+        <div class="container reveal">
+          <div class="split">
+            <div>
+              <p class="section-kicker">Key Idea</p>
+              <h2>Learn Dispatching, Keep Placement Fixed</h2>
+              <p>
+                GLIDE separates dispatching from placement. The reinforcement learning policy only
+                decides which feasible job should be launched from a bounded visible queue window. The
+                low-level node allocation is handled by the same First-Fit placement backend for all
+                methods.
+              </p>
+              <p>
+                This design makes the comparison clean: performance differences should come from
+                dispatching order, not from different placement implementations.
+              </p>
+            </div>
+            <div class="method-diagram" role="img" aria-label="GLIDE dispatching pipeline">
+              <img
+                class="method-asset"
+                src="./assets/method-overview.svg"
+                alt="GLIDE method overview"
+              >
+              <div class="diagram-node">Waiting Queue + Cluster State</div>
+              <div class="diagram-arrow" aria-hidden="true"></div>
+              <div class="diagram-node">Top-K Visible Queue Window</div>
+              <div class="diagram-arrow" aria-hidden="true"></div>
+              <div class="diagram-node">Feasibility Filtering</div>
+              <div class="diagram-arrow" aria-hidden="true"></div>
+              <div class="diagram-node accent">Queue-aware GRU Policy</div>
+              <div class="diagram-arrow" aria-hidden="true"></div>
+              <div class="diagram-node">Selected Job</div>
+              <div class="diagram-arrow" aria-hidden="true"></div>
+              <div class="diagram-node">Fixed First-Fit Placement</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container reveal">
+          <p class="section-kicker">Motivation</p>
+          <h2>Why GPU Job Dispatching Is Hard</h2>
+          <div class="card-grid three">
+            <article class="card">
+              <h3>Strong Heuristic Baselines</h3>
+              <p>
+                Simple dispatching rules such as SJF and slowdown priority already perform well on
+                conventional latency and slowdown metrics. A learned policy must improve meaningful
+                fairness-oriented behavior without degrading scheduling efficiency.
+              </p>
+            </article>
+            <article class="card">
+              <h3>Fairness-Efficiency Trade-off</h3>
+              <p>
+                Reducing service imbalance is not useful if the scheduler achieves it by delaying jobs,
+                increasing tail latency, or leaving jobs unfinished. GLIDE therefore evaluates fairness
+                together with latency, slowdown, and completion reliability.
+              </p>
+            </article>
+            <article class="card">
+              <h3>Event-Driven Partial Observation</h3>
+              <p>
+                Scheduling decisions occur only when jobs arrive, complete, or resources become
+                available. The scheduler observes current jobs and resources, but not future arrivals
+                or completions. This motivates recurrent state modeling.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section muted" id="method">
+        <div class="container reveal">
+          <p class="section-kicker">Method</p>
+          <h2>Method Overview</h2>
+          <div class="card-grid four">
+            <article class="card">
+              <span class="card-number">01</span>
+              <h3>State: Queue Pressure + Lag Context</h3>
+              <p>
+                GLIDE observes per-job features for the visible queue plus global summaries: queue
+                length, wait and slowdown statistics, GPU utilization, fragmentation, feasible-job
+                ratio, recent debt gaps, and CFS normalized service-lag summaries by GPU demand group.
+              </p>
+            </article>
+            <article class="card">
+              <span class="card-number">02</span>
+              <h3>Action: Feasible Dispatch Only</h3>
+              <p>
+                At each event, the simulator exposes a bounded visible pool, filters jobs that First-Fit
+                can actually place, samples up to 32 feasible candidates, and adds an explicit pass
+                action. The policy never chooses an impossible placement.
+              </p>
+            </article>
+            <article class="card">
+              <span class="card-number">03</span>
+              <h3>Policy: Set Encoder + Event Memory</h3>
+              <p>
+                A multi-head queue-set encoder summarizes the visible waiting jobs. A GRU carries
+                memory across scheduling events. The actor scores each candidate using job features,
+                recurrent context, candidate-set mean and max summaries, and job-context interactions.
+              </p>
+            </article>
+            <article class="card">
+              <span class="card-number">04</span>
+              <h3>Reward: Move Lag Down</h3>
+              <p>
+                The reward tracks the maximum positive CFS normalized lag among active GPU groups. It
+                penalizes log lag level and log lag growth, rewards log lag reduction, adds a pass
+                penalty, and attaches terminal gate costs for efficiency and unfinished jobs.
+              </p>
+            </article>
+          </div>
+          <div class="note">
+            The novelty is not a new PPO variant. The contribution is a service-lag-aware RL
+            dispatching framework that combines fixed-placement evaluation, feasible-action filtering,
+            queue-aware recurrent modeling, efficiency-gated checkpoint selection, and behavior
+            diagnostics.
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container reveal">
+          <p class="section-kicker">Implementation Highlights</p>
+          <h2>What Is Actually Inside GLIDE?</h2>
+          <div class="single-figure">
+            <img
+              src="./assets/reward-mechanism.svg"
+              alt="GLIDE reward mechanism from service-lag motion to gated checkpoint selection"
+            >
+          </div>
+          <div class="insight-grid">
+            <article class="insight-card">
+              <h3>Reward is based on lag motion, not a final score only</h3>
+              <p>
+                During each scheduling macro-step, GLIDE computes a CFS-style lag potential before and
+                after the interval. The potential is the largest normalized positive service lag among
+                GPU demand groups currently waiting or running.
+              </p>
+              <div class="formula">
+                r = -0.05 log(1 + lag_after) - growth + reduction - pass_cost - gates
+              </div>
+              <p>
+                The log transform keeps extreme lag values from dominating PPO updates. Growth and
+                reduction are separated so the policy gets directional feedback: making lag worse is
+                not the same signal as failing to improve it.
+              </p>
+            </article>
+            <article class="insight-card">
+              <h3>The action set is deliberately constrained</h3>
+              <p>
+                GLIDE first looks at the Top-K visible queue, then checks feasibility using the same
+                First-Fit placement backend used by all baselines. The policy scores only feasible
+                candidates plus pass. This keeps the RL problem focused on dispatch order, not learning
+                a hidden placement solver.
+              </p>
+              <ul class="tight-list">
+                <li>Visible pool: 32 jobs</li>
+                <li>Candidate sampling: uniform_pool</li>
+                <li>Mean feasible jobs: 3.09</li>
+                <li>Mean action-set size with pass: 4.09</li>
+              </ul>
+            </article>
+            <article class="insight-card">
+              <h3>Selection is guarded by efficiency gates</h3>
+              <p>
+                Checkpoints are not selected by fairness alone. The validation score is CFS lag AUC
+                plus penalties if slowdown, average wait, P95 wait, fairness floor, or unfinished jobs
+                violate reference gates. This prevents a seemingly fair policy from winning by simply
+                slowing the cluster down.
+              </p>
+              <ul class="tight-list">
+                <li>Best update: 33</li>
+                <li>Gate penalty at selected checkpoint: 0.0</li>
+                <li>Unfinished jobs: 0</li>
+                <li>Pass ratio: 0.0%</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container reveal">
+          <p class="section-kicker">Evaluation</p>
+          <h2>Controlled Trace-Driven Evaluation</h2>
+          <div class="setup-grid">
+            <ul class="setup-list">
+              <li><strong>Dataset:</strong> Alibaba Cluster Trace GPU v2023</li>
+              <li><strong>Training split:</strong> 1000 jobs from offset 0</li>
+              <li><strong>Evaluation split:</strong> 1000 jobs from offset 2000</li>
+              <li><strong>Node subset:</strong> 64 nodes</li>
+              <li><strong>Placement backend:</strong> First-Fit for all methods</li>
+              <li><strong>Visible queue window:</strong> Top-K = 32</li>
+              <li><strong>Candidate sampling:</strong> uniform_pool</li>
+              <li><strong>Candidate count:</strong> 32</li>
+              <li><strong>Policy model:</strong> GRU actor-critic</li>
+              <li><strong>Training algorithm:</strong> PPO with GAE</li>
+              <li><strong>Primary selection metric:</strong> CFS Normalized Service-Lag AUC</li>
+            </ul>
+            <div class="note compact">
+              All methods are evaluated under the same trace window, node subset, placement backend,
+              and metrics. This isolates whether reinforcement learning improves dispatching order
+              itself.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section results-section" id="results">
+        <div class="container reveal">
+          <p class="section-kicker">Results</p>
+          <h2>Main Results</h2>
+          <div class="metric-grid">
+            <div class="metric-card">
+              <span>CFS Lag AUC</span>
+              <strong>13.742</strong>
+              <small>Lower is better</small>
+            </div>
+            <div class="metric-card">
+              <span>Avg Wait</span>
+              <strong>905.64</strong>
+              <small>2.91% below SJF</small>
+            </div>
+            <div class="metric-card">
+              <span>Avg Slowdown</span>
+              <strong>3.776</strong>
+              <small>1.57% below SJF</small>
+            </div>
+            <div class="metric-card">
+              <span>P95 Wait</span>
+              <strong>2685.25</strong>
+              <small>Best among compared policies</small>
+            </div>
+            <div class="metric-card">
+              <span>Jain Fairness</span>
+              <strong>0.7999</strong>
+              <small>Higher is better</small>
+            </div>
+          </div>
+          <p>
+            Under the controlled First-Fit setting, GLIDE achieves the best performance among the
+            evaluated dispatching policies on CFS lag AUC, average waiting time, P95 waiting time,
+            average slowdown, P95 slowdown, and Jain fairness.
+          </p>
+          <p>
+            Relative to Slowdown Priority, GLIDE reduces CFS lag AUC by 2.35%. Relative to SJF, GLIDE
+            reduces CFS lag AUC by 3.73%, average slowdown by 1.57%, and average waiting time by 2.91%.
+          </p>
+          <p class="caution">
+            The improvements are moderate, but they are consistent across service-lag, average
+            latency, slowdown, and tail-related metrics. This is meaningful because SJF and
+            slowdown-priority are already strong heuristic baselines.
+          </p>
+
+          <div class="figure-row">
+            <img src="./assets/result-main.svg" alt="GLIDE main metric comparison">
+            <img src="./assets/result-cfs.svg" alt="CFS lag AUC comparison">
+          </div>
+
+          <div class="chart-grid">
+            <article class="chart-card">
+              <h3>CFS Lag AUC</h3>
+              <p>Lower is better.</p>
+              <div class="bar-chart">
+                <div class="bar-row">
+                  <span>SJF</span>
+                  <div class="bar-wrap"><div class="bar" style="width:100%">14.274</div></div>
+                </div>
+                <div class="bar-row">
+                  <span>Slowdown Priority</span>
+                  <div class="bar-wrap"><div class="bar" style="width:98.6%">14.073</div></div>
+                </div>
+                <div class="bar-row">
+                  <span>GLIDE</span>
+                  <div class="bar-wrap"><div class="bar glide" style="width:96.3%">13.742</div></div>
+                </div>
+              </div>
+            </article>
+            <article class="chart-card">
+              <h3>Average Waiting Time</h3>
+              <p>Lower is better.</p>
+              <div class="bar-chart">
+                <div class="bar-row">
+                  <span>SJF</span>
+                  <div class="bar-wrap"><div class="bar" style="width:100%">932.79</div></div>
+                </div>
+                <div class="bar-row">
+                  <span>Slowdown Priority</span>
+                  <div class="bar-wrap"><div class="bar" style="width:99.5%">927.73</div></div>
+                </div>
+                <div class="bar-row">
+                  <span>GLIDE</span>
+                  <div class="bar-wrap"><div class="bar glide" style="width:97.1%">905.64</div></div>
+                </div>
+              </div>
+            </article>
+            <article class="chart-card">
+              <h3>Average Slowdown</h3>
+              <p>Lower is better.</p>
+              <div class="bar-chart">
+                <div class="bar-row">
+                  <span>SJF</span>
+                  <div class="bar-wrap"><div class="bar" style="width:99.7%">3.836</div></div>
+                </div>
+                <div class="bar-row">
+                  <span>Slowdown Priority</span>
+                  <div class="bar-wrap"><div class="bar" style="width:100%">3.847</div></div>
+                </div>
+                <div class="bar-row">
+                  <span>GLIDE</span>
+                  <div class="bar-wrap"><div class="bar glide" style="width:98.2%">3.776</div></div>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div class="table-wrap" aria-label="Main metrics table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Policy</th>
+                  <th>Avg Wait</th>
+                  <th>P95 Wait</th>
+                  <th>Avg Slowdown</th>
+                  <th>P95 Slowdown</th>
+                  <th>Jain</th>
+                  <th>CFS Lag AUC</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>SJF</td>
+                  <td>932.79</td>
+                  <td>2769.25</td>
+                  <td>3.836</td>
+                  <td>13.188</td>
+                  <td>0.7976</td>
+                  <td>14.274</td>
+                </tr>
+                <tr>
+                  <td>Slowdown Priority</td>
+                  <td>927.73</td>
+                  <td>2724.00</td>
+                  <td>3.847</td>
+                  <td>13.353</td>
+                  <td>0.7994</td>
+                  <td>14.073</td>
+                </tr>
+                <tr class="highlight-row">
+                  <td>GLIDE</td>
+                  <td>905.64</td>
+                  <td>2685.25</td>
+                  <td>3.776</td>
+                  <td>13.069</td>
+                  <td>0.7999</td>
+                  <td>13.742</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="section muted">
+        <div class="container reveal">
+          <p class="section-kicker">Tail Behavior</p>
+          <h2>Tail and Fairness Results</h2>
+          <p>
+            GLIDE also improves tail and fairness-oriented metrics. This suggests that the CFS-lag
+            improvement is not achieved by sacrificing tail jobs or allowing the queue to collapse.
+          </p>
+          <div class="single-figure">
+            <img src="./assets/result-tail.svg" alt="Tail and fairness result comparison">
+          </div>
+          <div class="table-wrap" aria-label="Tail and fairness metrics table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Policy</th>
+                  <th>P99 Wait</th>
+                  <th>P99 Slowdown</th>
+                  <th>Max Slowdown</th>
+                  <th>CFS Max Lag</th>
+                  <th>Lag &gt; 0.5</th>
+                  <th>GPU Group Slow Gap</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>SJF</td>
+                  <td>3564.55</td>
+                  <td>49.911</td>
+                  <td>137.38</td>
+                  <td>0.694</td>
+                  <td>0.194</td>
+                  <td>2.552</td>
+                </tr>
+                <tr>
+                  <td>Slowdown Priority</td>
+                  <td>3540.40</td>
+                  <td>48.736</td>
+                  <td>142.06</td>
+                  <td>0.691</td>
+                  <td>0.193</td>
+                  <td>2.532</td>
+                </tr>
+                <tr class="highlight-row">
+                  <td>GLIDE</td>
+                  <td>3457.05</td>
+                  <td>47.377</td>
+                  <td>129.50</td>
+                  <td>0.686</td>
+                  <td>0.189</td>
+                  <td>2.367</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container reveal">
+          <p class="section-kicker">Diagnostics</p>
+          <h2>What Did GLIDE Learn?</h2>
+          <div class="metric-grid diagnostic-grid">
+            <div class="metric-card"><span>Highest-risk action selected</span><strong>81.2%</strong></div>
+            <div class="metric-card"><span>Mean selected risk rank</span><strong>1.31</strong></div>
+            <div class="metric-card"><span>Pass action ratio</span><strong>0.0%</strong></div>
+            <div class="metric-card"><span>Mean feasible jobs</span><strong>3.09</strong></div>
+            <div class="metric-card"><span>Mean action-set size</span><strong>4.09</strong></div>
+            <div class="metric-card"><span>Average debt gap</span><strong>0.0156</strong></div>
+          </div>
+          <p>
+            GLIDE frequently selects the highest-risk feasible job within the visible action set. The
+            pass action is available, but the selected checkpoint never uses it. This indicates that
+            the improvement is not caused by artificial idling. The learned behavior is closer to a
+            lag-aware risk prioritizer than to a scheduler that waits for a better future placement.
+          </p>
+        </div>
+      </section>
+
+      <section class="section muted">
+        <div class="container reveal">
+          <p class="section-kicker">Training</p>
+          <h2>Training Dynamics</h2>
+          <p>
+            The selected checkpoint occurs at update 33. Validation CFS lag AUC drops from 12311.41 at
+            update 0 to 13.74 at update 33. Later checkpoints drift upward, and the final checkpoint
+            performs substantially worse.
+          </p>
+          <p>
+            This shows that GLIDE can learn an effective dispatching policy, but PPO training is
+            unstable in this event-driven trace-based scheduling environment. Because the reward is
+            shaped from lag movement while checkpoint selection uses gated validation metrics, we report
+            the validation-selected checkpoint rather than the final checkpoint.
+          </p>
+          <div class="note">
+            <strong>Limitation:</strong> PPO checkpoint drift remains an important issue. Future work may
+            explore more stable constrained RL, offline-to-online training, or improved early stopping.
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container reveal">
+          <p class="section-kicker">Contributions</p>
+          <h2>Research Contributions</h2>
+          <div class="card-grid two">
+            <article class="card">
+              <span class="card-number">01</span>
+              <p>
+                Formulate service-lag-aware GPU job dispatching as an event-driven RL problem under a
+                fixed placement backend.
+              </p>
+            </article>
+            <article class="card">
+              <span class="card-number">02</span>
+              <p>
+                Propose GLIDE, a GRU-based PPO dispatching policy with feasible-action filtering and
+                service-lag-aware reward shaping.
+              </p>
+            </article>
+            <article class="card">
+              <span class="card-number">03</span>
+              <p>
+                Design a controlled trace-driven evaluation protocol that compares learned dispatching
+                against strong heuristic baselines under the same First-Fit placement backend.
+              </p>
+            </article>
+            <article class="card">
+              <span class="card-number">04</span>
+              <p>
+                Use CFS normalized service-lag AUC together with efficiency-gated checkpoint selection
+                to evaluate fairness-oriented improvements without severe latency or slowdown
+                degradation.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section bibtex-section" id="bibtex">
+        <div class="container reveal">
+          <p class="section-kicker">Citation</p>
+          <h2>BibTeX</h2>
+          <div class="code-head">
+            <span>Project citation</span>
+            <button class="button small" type="button" id="copy-bibtex">Copy</button>
+          </div>
+          <pre><code id="bibtex-code">@misc{teng2026glide,
+  title        = {GLIDE: GRU-based Lag-Informed Decision Engine for GPU Job Dispatching},
+  author       = {Teng, Haopei and Chang, Juiyun and Zheng, Jinjia},
+  year         = {2026},
+  note         = {NYCU Reinforcement Learning Team Project}
+}</code></pre>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container">
+        <span>GLIDE</span>
+        <span>Static project page for GitHub Pages</span>
+      </div>
+    </footer>
+  </body>
+</html>

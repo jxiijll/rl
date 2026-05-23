@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="430" viewBox="0 0 1080 430" role="img" aria-labelledby="title desc">
+  <title id="title">GLIDE reward mechanism</title>
+  <desc id="desc">GLIDE computes CFS lag potential before and after a dispatch interval, transforms the change into log-level, growth, and reduction reward components, adds pass and terminal gate penalties, and selects checkpoints using gated validation CFS lag AUC.</desc>
+  <defs>
+    <linearGradient id="main" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#138a8a"/>
+      <stop offset="1" stop-color="#2d5be3"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#2d5be3"/>
+    </marker>
+    <filter id="shadow" x="-8%" y="-18%" width="116%" height="136%">
+      <feDropShadow dx="0" dy="9" stdDeviation="10" flood-color="#1f2d46" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <rect width="1080" height="430" rx="18" fill="#ffffff"/>
+  <text x="34" y="46" fill="#172033" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="800">Reward Signal: Learn from Service-Lag Motion</text>
+  <text x="34" y="74" fill="#718093" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700">The policy is trained on how each dispatch interval changes CFS-style normalized service lag, then selected with efficiency gates.</text>
+
+  <g filter="url(#shadow)" font-family="Segoe UI, Arial, sans-serif">
+    <rect x="34" y="122" width="184" height="102" rx="14" fill="#f8fbff" stroke="#dce5ea"/>
+    <text x="126" y="153" text-anchor="middle" fill="#172033" font-size="16" font-weight="800">Lag Before</text>
+    <text x="126" y="178" text-anchor="middle" fill="#526076" font-size="13" font-weight="700">max positive CFS lag</text>
+    <text x="126" y="199" text-anchor="middle" fill="#526076" font-size="13" font-weight="700">among active GPU groups</text>
+
+    <rect x="272" y="122" width="184" height="102" rx="14" fill="#eef7f6" stroke="#b8d9d7"/>
+    <text x="364" y="153" text-anchor="middle" fill="#0e6262" font-size="16" font-weight="800">Dispatch Decision</text>
+    <text x="364" y="178" text-anchor="middle" fill="#526076" font-size="13" font-weight="700">choose feasible job</text>
+    <text x="364" y="199" text-anchor="middle" fill="#526076" font-size="13" font-weight="700">or explicit pass</text>
+
+    <rect x="510" y="122" width="184" height="102" rx="14" fill="#f8fbff" stroke="#dce5ea"/>
+    <text x="602" y="153" text-anchor="middle" fill="#172033" font-size="16" font-weight="800">Lag After</text>
+    <text x="602" y="178" text-anchor="middle" fill="#526076" font-size="13" font-weight="700">projected through next</text>
+    <text x="602" y="199" text-anchor="middle" fill="#526076" font-size="13" font-weight="700">event interval</text>
+
+    <rect x="748" y="122" width="288" height="102" rx="14" fill="#eef4ff" stroke="#91a8ee"/>
+    <text x="892" y="153" text-anchor="middle" fill="#2d5be3" font-size="15" font-weight="800">Per-Decision Reward</text>
+    <text x="892" y="178" text-anchor="middle" fill="#526076" font-size="13" font-weight="700">- log lag level - log growth</text>
+    <text x="892" y="199" text-anchor="middle" fill="#526076" font-size="13" font-weight="700">+ log reduction - pass penalty</text>
+  </g>
+
+  <g fill="none" stroke="#2d5be3" stroke-width="3" marker-end="url(#arrow)">
+    <path d="M218 173 H268"/>
+    <path d="M456 173 H506"/>
+    <path d="M694 173 H744"/>
+  </g>
+
+  <g font-family="Segoe UI, Arial, sans-serif">
+    <rect x="104" y="282" width="370" height="82" rx="14" fill="#142033"/>
+    <text x="128" y="313" fill="#e6edf7" font-size="15" font-weight="800">Training scalarization</text>
+    <text x="128" y="340" fill="#e6edf7" font-size="13" font-family="Consolas, Liberation Mono, monospace">r = -0.05 level - growth</text>
+    <text x="128" y="358" fill="#e6edf7" font-size="13" font-family="Consolas, Liberation Mono, monospace">    + reduction - pass</text>
+
+    <rect x="574" y="282" width="388" height="82" rx="14" fill="#fff8ef" stroke="#ead6b7"/>
+    <text x="598" y="313" fill="#a17217" font-size="15" font-weight="800">Validation checkpoint guardrails</text>
+    <text x="598" y="338" fill="#526076" font-size="13" font-weight="700">CFS lag AUC plus gate penalties for</text>
+    <text x="598" y="357" fill="#526076" font-size="13" font-weight="700">slowdown, wait, P95, fairness, unfinished jobs</text>
+  </g>
+
+  <g fill="none" stroke="url(#main)" stroke-width="3" marker-end="url(#arrow)">
+    <path d="M892 224 C892 258 790 264 790 282"/>
+    <path d="M892 224 C892 258 326 262 326 282"/>
+  </g>
+
+  <g font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800">
+    <circle cx="88" cy="387" r="7" fill="#138a8a"/>
+    <text x="104" y="392" fill="#526076">Directional reward: penalize lag growth, reward lag reduction.</text>
+    <circle cx="548" cy="387" r="7" fill="#2d5be3"/>
+    <text x="564" y="392" fill="#526076">Efficiency gates block fair-looking but slow checkpoints.</text>
+  </g>
+</svg>

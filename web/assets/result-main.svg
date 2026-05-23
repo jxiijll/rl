@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="320" viewBox="0 0 760 320" role="img" aria-labelledby="title desc">
+  <title id="title">Main result comparison</title>
+  <desc id="desc">A compact comparison showing GLIDE with the best CFS lag AUC, average wait, average slowdown, P95 wait, and Jain fairness among the evaluated policies.</desc>
+  <rect width="760" height="320" rx="18" fill="#ffffff"/>
+  <text x="32" y="44" fill="#172033" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="800">Main Metrics</text>
+  <text x="32" y="72" fill="#718093" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700">GLIDE checkpoint selected by validation CFS lag AUC</text>
+  <g font-family="Segoe UI, Arial, sans-serif">
+    <g transform="translate(32 116)">
+      <rect width="128" height="132" rx="12" fill="#eef7f6" stroke="#b8d9d7"/>
+      <text x="16" y="32" fill="#526076" font-size="13" font-weight="800">CFS Lag AUC</text>
+      <text x="16" y="76" fill="#0e6262" font-size="34" font-weight="850">13.742</text>
+      <text x="16" y="108" fill="#718093" font-size="12">lower is better</text>
+    </g>
+    <g transform="translate(176 116)">
+      <rect width="128" height="132" rx="12" fill="#f8fbff" stroke="#dce5ea"/>
+      <text x="16" y="32" fill="#526076" font-size="13" font-weight="800">Avg Wait</text>
+      <text x="16" y="76" fill="#2d5be3" font-size="34" font-weight="850">905.64</text>
+      <text x="16" y="108" fill="#718093" font-size="12">best value</text>
+    </g>
+    <g transform="translate(320 116)">
+      <rect width="128" height="132" rx="12" fill="#f8fbff" stroke="#dce5ea"/>
+      <text x="16" y="32" fill="#526076" font-size="13" font-weight="800">Avg Slowdown</text>
+      <text x="16" y="76" fill="#2d5be3" font-size="34" font-weight="850">3.776</text>
+      <text x="16" y="108" fill="#718093" font-size="12">best value</text>
+    </g>
+    <g transform="translate(464 116)">
+      <rect width="128" height="132" rx="12" fill="#f8fbff" stroke="#dce5ea"/>
+      <text x="16" y="32" fill="#526076" font-size="13" font-weight="800">P95 Wait</text>
+      <text x="16" y="76" fill="#2d5be3" font-size="34" font-weight="850">2685</text>
+      <text x="16" y="108" fill="#718093" font-size="12">best value</text>
+    </g>
+    <g transform="translate(608 116)">
+      <rect width="120" height="132" rx="12" fill="#fff8ef" stroke="#ead6b7"/>
+      <text x="16" y="32" fill="#526076" font-size="13" font-weight="800">Jain</text>
+      <text x="16" y="76" fill="#a17217" font-size="34" font-weight="850">0.7999</text>
+      <text x="16" y="108" fill="#718093" font-size="12">higher is better</text>
+    </g>
+  </g>
+</svg>
