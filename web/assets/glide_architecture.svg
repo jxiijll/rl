@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="520" viewBox="0 0 1080 520" role="img" aria-labelledby="title desc">
+  <title id="title">GLIDE architecture</title>
+  <desc id="desc">GLIDE dispatch architecture with a clean top dispatch path and a separate service-lag-aware PPO feedback path.</desc>
+  <defs>
+    <linearGradient id="main" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#138a8a"/>
+      <stop offset="1" stop-color="#2d5be3"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#2d5be3"/>
+    </marker>
+    <marker id="arrow-teal" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#138a8a"/>
+    </marker>
+    <filter id="shadow" x="-8%" y="-18%" width="116%" height="136%">
+      <feDropShadow dx="0" dy="9" stdDeviation="10" flood-color="#1f2d46" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <rect width="1080" height="520" rx="18" fill="#ffffff"/>
+  <text x="34" y="46" fill="#172033" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="800">GLIDE Architecture: Dispatching with Service-Lag Feedback</text>
+  <text x="34" y="74" fill="#718093" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700">The learned policy scores only feasible queue actions, then the same fixed placement backend allocates GPU nodes for every compared method.</text>
+
+  <g filter="url(#shadow)" font-family="Segoe UI, Arial, sans-serif">
+    <rect x="34" y="122" width="184" height="102" rx="14" fill="#f8fbff" stroke="#dce5ea"/>
+    <text x="126" y="153" text-anchor="middle" fill="#172033" font-size="16" font-weight="800">Trace Simulator</text>
+    <text x="126" y="178" text-anchor="middle" fill="#526076" font-size="13" font-weight="700">arrivals, completions,</text>
+    <text x="126" y="199" text-anchor="middle" fill="#526076" font-size="13" font-weight="700">queue and GPU nodes</text>
+
+    <rect x="272" y="122" width="184" height="102" rx="14" fill="#eef7f6" stroke="#b8d9d7"/>
+    <text x="364" y="153" text-anchor="middle" fill="#0e6262" font-size="16" font-weight="800">Policy Inputs</text>
+    <text x="364" y="178" text-anchor="middle" fill="#526076" font-size="13" font-weight="700">visible queue U_t</text>
+    <text x="364" y="199" text-anchor="middle" fill="#526076" font-size="13" font-weight="700">feasible X_t + b_t</text>
+
+    <rect x="510" y="104" width="252" height="250" rx="16" fill="#eef4ff" stroke="#91a8ee"/>
+    <text x="636" y="136" text-anchor="middle" fill="#2d5be3" font-size="17" font-weight="800">GLIDE Actor-Critic</text>
+    <rect x="534" y="158" width="96" height="52" rx="12" fill="#ffffff" stroke="#dce5ea"/>
+    <text x="582" y="180" text-anchor="middle" fill="#172033" font-size="12" font-weight="800">Queue-set</text>
+    <text x="582" y="198" text-anchor="middle" fill="#526076" font-size="11" font-weight="700">attention</text>
+    <rect x="642" y="158" width="96" height="52" rx="12" fill="#ffffff" stroke="#dce5ea"/>
+    <text x="690" y="180" text-anchor="middle" fill="#172033" font-size="12" font-weight="800">State</text>
+    <text x="690" y="198" text-anchor="middle" fill="#526076" font-size="11" font-weight="700">encoder</text>
+    <rect x="558" y="230" width="156" height="50" rx="12" fill="#ffffff" stroke="#dce5ea"/>
+    <text x="636" y="251" text-anchor="middle" fill="#172033" font-size="12" font-weight="800">Fusion + GRU</text>
+    <text x="636" y="269" text-anchor="middle" fill="#526076" font-size="11" font-weight="700">event memory h_t</text>
+    <rect x="534" y="300" width="96" height="42" rx="12" fill="#ffffff" stroke="#dce5ea"/>
+    <text x="582" y="326" text-anchor="middle" fill="#172033" font-size="12" font-weight="800">Actor pi(a|s)</text>
+    <rect x="642" y="300" width="96" height="42" rx="12" fill="#ffffff" stroke="#dce5ea"/>
+    <text x="690" y="326" text-anchor="middle" fill="#172033" font-size="12" font-weight="800">Critic V(s)</text>
+
+    <rect x="816" y="122" width="230" height="102" rx="14" fill="#fff8ef" stroke="#ead6b7"/>
+    <text x="931" y="153" text-anchor="middle" fill="#a17217" font-size="16" font-weight="800">Dispatch + Placement</text>
+    <text x="931" y="178" text-anchor="middle" fill="#526076" font-size="13" font-weight="700">choose job or pass</text>
+    <text x="931" y="199" text-anchor="middle" fill="#526076" font-size="13" font-weight="700">fixed First-Fit backend</text>
+  </g>
+
+  <g fill="none" stroke="#2d5be3" stroke-width="3" marker-end="url(#arrow)">
+    <path d="M218 173 H268"/>
+    <path d="M456 173 H506"/>
+    <path d="M762 173 H812"/>
+  </g>
+
+  <g fill="none" stroke="#91a8ee" stroke-width="2" marker-end="url(#arrow)">
+    <path d="M582 210 V226"/>
+    <path d="M690 210 V226"/>
+    <path d="M636 280 V296"/>
+  </g>
+
+  <g font-family="Segoe UI, Arial, sans-serif">
+    <rect x="510" y="392" width="252" height="82" rx="14" fill="#142033"/>
+    <text x="534" y="423" fill="#e6edf7" font-size="15" font-weight="800">PPO update</text>
+    <text x="534" y="448" fill="#e6edf7" font-size="13" font-weight="700">GAE, clipped actor loss,</text>
+    <text x="534" y="467" fill="#e6edf7" font-size="13" font-weight="700">critic value and entropy</text>
+
+    <rect x="816" y="392" width="230" height="82" rx="14" fill="#f8fbff" stroke="#dce5ea"/>
+    <text x="840" y="423" fill="#172033" font-size="15" font-weight="800">Service-lag reward</text>
+    <text x="840" y="448" fill="#526076" font-size="13" font-weight="700">CFS lag motion, pass cost,</text>
+    <text x="840" y="467" fill="#526076" font-size="13" font-weight="700">terminal efficiency gates</text>
+  </g>
+
+  <g fill="none" stroke="url(#main)" stroke-width="3" marker-end="url(#arrow-teal)">
+    <path d="M931 224 V388"/>
+    <path d="M816 433 H766"/>
+    <path d="M636 392 V358"/>
+  </g>
+
+  <g font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800">
+    <circle cx="88" cy="500" r="7" fill="#138a8a"/>
+    <text x="104" y="505" fill="#526076">Top lane is the online dispatch path.</text>
+    <circle cx="548" cy="500" r="7" fill="#2d5be3"/>
+    <text x="564" y="505" fill="#526076">Bottom lane is the service-lag-aware training feedback path.</text>
+  </g>
+</svg>
