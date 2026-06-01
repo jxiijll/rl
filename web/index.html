@@ -20,6 +20,7 @@
           <a href="#method">Method</a>
           <a href="#architecture">Architecture</a>
           <a href="#results">Results</a>
+          <a href="#future-work">Future Work</a>
           <a href="#bibtex">BibTeX</a>
         </div>
       </nav>
@@ -40,7 +41,7 @@
           Department of Computer Science, National Yang Ming Chiao Tung University
         </p>
         <div class="button-row" aria-label="Project links">
-          <a class="button primary" href="./assets/proposal.pdf">Proposal PDF</a>
+          <a class="button primary" href="./assets/proposal.pdf">Paper PDF</a>
           <a class="button" href="#">Code</a>
           <a class="button" href="#bibtex">BibTeX</a>
         </div>
@@ -1039,6 +1040,132 @@
           <div class="note">
             <strong>Limitation:</strong> PPO checkpoint drift remains an important issue. Future work may
             explore more stable constrained RL, offline-to-online training, or improved early stopping.
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="future-work">
+        <div class="container reveal">
+          <p class="section-kicker">Future Work</p>
+          <h2>Open Questions &amp; Future Directions</h2>
+          <ul class="key-points">
+            <li><strong>Headline question:</strong> can GLIDE still perform well when the workload shifts? Real GPU clusters never see the same trace twice &mdash; cross-workload generalization is what would make a learned dispatcher practically useful.</li>
+            <li>Our current evaluation trains on offset 0 and evaluates on offset 2000 of the <em>same</em> Alibaba GPU v2023 trace. The policy has not been stress-tested on a fundamentally different job mix, cluster shape, or arrival pattern.</li>
+            <li>Two directions below &mdash; cross-dataset training and continual learning at deployment &mdash; are aimed at closing that gap.</li>
+          </ul>
+          <details class="more">
+            <summary>See more</summary>
+            <div class="more-content">
+              <p>
+                The most important practical question for GLIDE is generalization. If a learned dispatcher
+                only works on the trace window it was trained on, it is hard to justify over a tuned
+                heuristic that requires no training at all. A meaningful real-world evaluation would swap
+                the workload generator entirely &mdash; for example, train on Alibaba GPU v2023 and evaluate
+                on a Microsoft Philly-style trace, or vice versa &mdash; and check whether the CFS-lag
+                improvements still hold without retraining.
+              </p>
+              <p>
+                This question motivates the two directions below: one targets generalization at training
+                time, the other at deployment time.
+              </p>
+            </div>
+          </details>
+
+          <div class="card-grid three">
+            <article class="card">
+              <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="2" y="5" width="7" height="14" rx="1.5" stroke="currentColor" stroke-width="1.7" fill="none"/>
+                <rect x="15" y="5" width="7" height="14" rx="1.5" stroke="currentColor" stroke-width="1.7" fill="none"/>
+                <path d="M9 9h6M15 9l-2 -2M15 9l-2 2" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M15 15h-6M9 15l2 -2M9 15l2 2" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <h3>Train and evaluate on disjoint datasets</h3>
+              <ul class="key-points compact">
+                <li>Wire cross-dataset evaluation into PPO training itself, not just final reporting.</li>
+                <li>Reuse the existing gated-validation checkpoint selection &mdash; but score against a held-out workload.</li>
+                <li><span class="bullet-tag tradeoff">Tradeoff</span>slower convergence and at least one additional well-characterized trace.</li>
+              </ul>
+              <details class="more">
+                <summary>See more</summary>
+                <div class="more-content">
+                  <p>
+                    A direct way to discourage the policy from overfitting to a single trace window is to
+                    train on one dataset and run periodic validation on a different one during PPO itself.
+                    The same efficiency gates (slowdown, P95 wait, Jain floor, unfinished jobs) would be
+                    evaluated against the foreign trace, so a checkpoint that only fits the training
+                    distribution would lose to one that generalizes. The cost is slower training and the
+                    need for at least one additional labeled trace, but the resulting checkpoint should
+                    transfer more reliably to unseen clusters.
+                  </p>
+                </div>
+              </details>
+            </article>
+
+            <article class="card">
+              <svg class="card-icon blue" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 12a8 8 0 0 1 14-5.3M20 4v4h-4M20 12a8 8 0 0 1-14 5.3M4 20v-4h4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <h3>Continual learning at deployment</h3>
+              <ul class="key-points compact">
+                <li>Keep PPO updates running on live dispatching events after deployment.</li>
+                <li><span class="bullet-tag risk">Risk</span>policy drift &mdash; the checkpoint-drift problem the Training Dynamics chart already shows on a <em>static</em> trace.</li>
+                <li><span class="bullet-tag mitigation">Mitigations</span>replay buffer of historical traces, plus gated rollback to the last safe checkpoint.</li>
+              </ul>
+              <details class="more">
+                <summary>See more</summary>
+                <div class="more-content">
+                  <p>
+                    Workloads in a real cluster change over time &mdash; new model architectures, new
+                    tenants, new resource demands. Continual learning would let GLIDE adapt without
+                    re-running offline training. The risk is well demonstrated by the existing training
+                    curve: PPO already drifts upward after update 39 on a fixed trace, so updating on a
+                    live, non-stationary stream is even more likely to lose a good checkpoint.
+                  </p>
+                  <p>
+                    A practical version would mix live samples with a replay buffer of historical traces
+                    and reuse the gated-validation machinery to roll back to the last safe checkpoint
+                    whenever efficiency gates regress, trading some adaptation speed for stability.
+                  </p>
+                </div>
+              </details>
+            </article>
+
+            <article class="card">
+              <svg class="card-icon coral" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.7" fill="none"/>
+                <circle cx="8" cy="9" r="1.3" fill="currentColor"/>
+                <circle cx="14" cy="7" r="1.3" fill="currentColor"/>
+                <circle cx="17" cy="13" r="1.3" fill="currentColor"/>
+                <circle cx="9" cy="16" r="1.3" fill="currentColor"/>
+                <circle cx="13" cy="14" r="1.3" fill="currentColor"/>
+              </svg>
+              <h3>Avoiding environment overfitting</h3>
+              <ul class="key-points compact">
+                <li><span class="bullet-tag risk">Risk</span>a 2&ndash;3% win over SJF on one trace may be the policy learning simulator-specific quirks &mdash; arrival timing, the job-size mix of this slice &mdash; rather than a generalizable dispatching principle.</li>
+                <li><span class="bullet-tag mitigation">Mitigations</span>domain randomization on arrival rates and job-size distributions, multi-seed evaluation, perturbed traces during training.</li>
+                <li><span class="bullet-tag guardrail">Guardrail</span>re-evaluate FIFO, SJF, and Slowdown Priority on the same perturbations &mdash; otherwise the comparison is rigged in either direction.</li>
+              </ul>
+              <details class="more">
+                <summary>See more</summary>
+                <div class="more-content">
+                  <p>
+                    When an RL agent solves a single environment cleanly, the win can come from learning
+                    quirks of that environment rather than a transferable scheduling principle. For GLIDE
+                    to genuinely compete with FIFO, SJF, and Slowdown Priority, the comparison needs to
+                    hold up when the trace is perturbed &mdash; not just on the exact 1000-job slice the
+                    policy trained against.
+                  </p>
+                  <p>
+                    Concretely, this means training under domain randomization (jitter on arrival rates,
+                    resampled job-size distributions, varied seeds) and evaluating each method &mdash;
+                    learned and heuristic alike &mdash; on the same randomized envelope. If GLIDE's
+                    CFS-lag improvement survives that, the gain is a property of the policy. If it
+                    collapses, the original comparison was measuring environment fit, not dispatching
+                    skill.
+                  </p>
+                </div>
+              </details>
+            </article>
           </div>
         </div>
       </section>

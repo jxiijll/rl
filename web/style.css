@@ -623,6 +623,23 @@ h3 {
 .me-tag.blue { background: rgba(45, 91, 227, 0.12); color: var(--blue); }
 .me-tag.gold { background: rgba(161, 114, 23, 0.14); color: var(--gold); }
 
+.bullet-tag {
+  display: inline-block;
+  padding: 2px 9px;
+  margin-right: 7px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+.bullet-tag.risk       { background: rgba(207, 93, 72, 0.14);  color: var(--coral); }
+.bullet-tag.mitigation { background: rgba(19, 138, 138, 0.14); color: var(--teal); }
+.bullet-tag.tradeoff   { background: rgba(161, 114, 23, 0.14); color: var(--gold); }
+.bullet-tag.guardrail  { background: rgba(45, 91, 227, 0.12); color: var(--blue); }
+
 .metrics-explain-list p {
   margin: 0;
   color: var(--soft-ink);
@@ -1337,6 +1354,19 @@ h3 {
   font-size: 0.82rem;
   font-weight: 900;
 }
+
+.card-icon {
+  display: block;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 12px;
+  padding: 6px;
+  border-radius: 9px;
+  background: rgba(19, 138, 138, 0.10);
+  color: var(--teal);
+}
+.card-icon.blue  { background: rgba(45, 91, 227, 0.10); color: var(--blue); }
+.card-icon.coral { background: rgba(207, 93, 72, 0.12); color: var(--coral); }
 
 .note {
   margin-top: 28px;
